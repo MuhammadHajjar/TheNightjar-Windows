@@ -13,6 +13,7 @@ date, and what was proved. Notes per milestone are in docs/notes/.
 | M3 levels 2-5 | **done 2026-09-27** (two bugs reported, fixed in M4) |
 | M4+M5 levels 6-14 and the two endings, in one go | **done 2026-09-27** ("everything works great") |
 | private beta 1 for Seth | **2026-09-27 number 4** in the Drive folder; report fixed in 2026-09-28 |
+| M7 updater, public repo, first release | **released 2026-09-28** |
 | M6 the full shell | - |
 | M7 folder build, data pack, updater | - |
 | beta, release | - |
@@ -240,3 +241,31 @@ footsteps start at 200 real steps a minute.  Levels 9, 10 and 11 are as the
 data made them.
 
 **Decision 10 (2026-09-28): the main menu's Begin is called Continue.**
+
+**Decision 10 is followed by the release (2026-09-28): go.** A new changelog
+for players (the development history stays in this journal), the updater,
+the public repo and the first release.
+
+## M7 + release - the updater and 2026-09-28 (2026-09-28)
+
+**The updater** is the Papa Sangre II port's (`nightjar/update/`), wired into
+the shell the same way: a quiet check when the main menu first opens
+(Settings, Check for updates at start), Check for updates on the main menu,
+and two answers only, Update now or Not now.  Only the files that changed are
+downloaded; the hand-off runs after the game closes, never writes `config/`,
+and starts the game again.  The release zip is always
+`TheNightjar-Windows.zip`, so
+https://github.com/MuhammadHajjar/TheNightjar-Windows/releases/latest/download/TheNightjar-Windows.zip
+always gives the newest.
+
+**Proved:** `tools/verify_updater.py`, offline through the real PowerShell
+hand-off: a normal update, a server without byte ranges, a file locked for
+4 s, a file locked for good (rolled back, the old game started); `--frozen`:
+a built 2026-09-27 number 5 exe updated itself to 2026-09-28 from a local
+release (2 files, 41 MB of 93 MB, save kept, restarted, 7 s); and live, the
+same build updated itself from the GitHub release (38 s, save kept,
+restarted).  A fresh clone passes all 210 tests once the HRTF is built.
+
+**Released:** https://github.com/MuhammadHajjar/TheNightjar-Windows, public,
+MIT; tag `2026-09-28`, asset `TheNightjar-Windows.zip` (93 MB).  The beta zip
+was removed from the Drive folder; Seth's note stays.

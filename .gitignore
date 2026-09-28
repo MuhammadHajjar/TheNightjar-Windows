@@ -1,0 +1,51 @@
+# Generated
+build/
+dist/
+Run/*
+config/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.DS_Store
+
+# The original game.  What the port runs on is committed so a clone builds
+# and plays with nothing else to find: the levels and the level list, the
+# playlists, the sounds, the four menu sounds, and the More games page the
+# About screen reads - and the arm64 binary, which the disassembler reads.
+# Artwork, the nibs, the video, the VoiceOver prompts and the code signature
+# are not: nothing here needs them.
+reference/*
+!reference/Nightjar_arm64
+!reference/Payload/
+reference/Payload/*
+!reference/Payload/The Nightjar.app/
+reference/Payload/The Nightjar.app/*
+!reference/Payload/The Nightjar.app/Exports/
+!reference/Payload/The Nightjar.app/meta/
+!reference/Payload/The Nightjar.app/nightjar_sounds/
+!reference/Payload/The Nightjar.app/*.wav
+!reference/Payload/The Nightjar.app/messagesList.plist
+!reference/Payload/The Nightjar.app/objectsList.plist
+!reference/Payload/The Nightjar.app/html/
+reference/Payload/The Nightjar.app/html/*
+!reference/Payload/The Nightjar.app/html/othergames_nj1.html
+
+# the working brief (this machine's folders and the tester's details)
+NIGHTJAR_PORT_BRIEF.md
+
+# A third-party service's user names and passwords ship inside the original
+# bundle.  Never commit it, never ship it in a build, never paste it anywhere.
+# This rule comes last so no negation above can bring it back.
+EIGC_Users.plist
+**/EIGC_Users.plist
+
+# Derived from the original binary and regenerable with the scripts in tools/
+# (tools/psdis.py).  The HRTF table is the exception: it is committed, so
+# nobody needs the binary to build.
+tools/dis/
+tools/classdump.txt
+
+# what a self-test run from source writes
+selftest.txt
+selftest-update.txt

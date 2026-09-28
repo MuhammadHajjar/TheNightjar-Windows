@@ -1,0 +1,208 @@
+"""``PGEGameProgress`` - what the game remembers between runs.
+
+A singleton over ``NSUserDefaults`` in the original.  There is no
+``NSUserDefaults`` here, so the port writes a JSON file next to the executable,
+but it keeps the original's **key names**, including their oddities, so the
+saved state is a faithful record of what the engine tracks:
+
+===========================  ==================================================
+``<level>_completed``        bool - the level has been finished
+``<level>_locked``           bool - **true means unlocked.**  The key reads
+                             backwards; ``isLevelUnlocked:`` returns the value
+                             as-is, so the name is simply wrong in the original
+``lastLevelUnlocked``        string - written **only the first time** a level is
+                             unlocked, so it records how far you have got rather
+                             than the last level you happened to unlock again
+``lastPLaylist``             string - the playlist in use.  The capital L is the
+                             original's typo and is kept: change it and a save
+                             written by the original would not be read back
+``<sound name>``             bool - this narration has been heard once and may
+                             now be skipped
+``<dilemma id>``             bool - the choice made at that dilemma
+===========================  ==================================================
+
+``lastUnlockedLevel`` falls back to the first level of whichever game is
+running: ``nightJar_1`` for The Nightjar (``ps1_1`` for Papa Sangre, which
+shares the engine).
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+
+from .. import APP_NAME
+from ..util import paths
+
+#: -[PGEGameProgress lastUnlockedLevel] (0x10002b784) switches on
+#: PGEGameParameters.appName.
+FIRST_LEVEL = {'Papa Sangre': 'ps1_1', 'The Nightjar': 'nightJar_1'}
+DEFAULT_APP = APP_NAME
+
+LAST_UNLOCKED_KEY = 'lastLevelUnlocked'
+LAST_PLAYLIST_KEY = 'lastPLaylist'          # the typo is the original's
+
+
+class GameProgress:
+    """Persistent progression, mirroring the original's defaults keys."""
+
+    def __init__(self, path: str | None = None,
+                 app_name: str = DEFAULT_APP) -> None:
+        self.path = path or os.path.join(paths.config_dir(), 'progress.json')
+        self.app_name = app_name
+        self.values: dict[str, object] = {}
+        self.load()
+
+    # ------------------------------------------------------------ storage
+    def load(self) -> 'GameProgress':
+        """Read the save, falling back to the last known-good copy.
+
+        An unreadable save used to mean an empty one, which is a whole
+        playthrough gone for a file that may only be half written.  The backup
+        is tried first instead, and only when neither can be read does the
+        progress start over.
+
+        A readable save is still topped up from the backup, because a save
+        damaged by the bug 1.0.4 had can be missing keys the backup still
+        holds - see :meth:`_adopt`.
+        """
+        for candidate in (self.path, self.path + '.bak'):
+            stored = self._read(candidate)
+            if stored is None:
+                continue          # a corrupt save must never stop the game
+            self.values = stored
+            if candidate == self.path:
+                self._adopt(self._read(self.path + '.bak'))
+            return self
+        self.values = {}
+        return self
+
+    def synchronize(self) -> None:
+        """``[NSUserDefaults synchronize]`` - write it out now.
+
+        Written beside the save and moved into place, because opening the real
+        file for writing truncates it first: anything that stopped the process
+        in that window left a half-written save behind.  The previous file is
+        kept as ``.bak`` so there is always one good copy on disk.
+
+        Whatever the file already holds and this copy has never seen is taken
+        in first, so a write can only ever add to the save - see
+        :meth:`_adopt`.
+        """
+        try:
+            os.makedirs(os.path.dirname(self.path), exist_ok=True)
+            self._adopt(self._read(self.path))
+            tmp = self.path + '.tmp'
+            with open(tmp, 'w', encoding='utf-8') as fh:
+                json.dump(self.values, fh, indent=2, sort_keys=True)
+                fh.flush()
+                os.fsync(fh.fileno())
+            if os.path.exists(self.path):
+                shutil.copyfile(self.path, self.path + '.bak')
+            os.replace(tmp, self.path)
+        except OSError:
+            pass                  # a read-only install must still be playable
+
+    @staticmethod
+    def _read(path: str) -> dict | None:
+        """The save at ``path``, or None if it is not there or not readable."""
+        try:
+            with open(path, encoding='utf-8') as fh:
+                stored = json.load(fh)
+        except (OSError, ValueError):
+            return None
+        return stored if isinstance(stored, dict) else None
+
+    def _adopt(self, stored: dict | None) -> None:
+        """Take in keys this copy has not seen.  What it holds always wins.
+
+        Nothing is ever removed from the save - every key is written once and
+        then only ever set again - so no other copy of it can hold anything
+        this one is entitled to drop - so two copies of the save live at once
+        (or a second copy of the game running beside this one) can never throw
+        each other's keys away.
+        """
+        for key, value in (stored or {}).items():
+            self.values.setdefault(key, value)
+
+    def _set(self, key: str, value) -> None:
+        self.values[key] = value
+        self.synchronize()
+
+    def _bool(self, key: str) -> bool:
+        return bool(self.values.get(key, False))
+
+    # --------------------------------------------------------- completion
+    def player_did_complete_level(self, name: str) -> None:
+        self._set(f'{name}_completed', True)
+
+    def is_level_completed(self, name: str) -> bool:
+        return self._bool(f'{name}_completed')
+
+    # ------------------------------------------------------------ unlocks
+    def player_did_unlock_level(self, name: str) -> None:
+        """``-[PGEGameProgress playerDidUnlockLevel:]``
+
+        ``lastLevelUnlocked`` is written only when the level was not already
+        unlocked, so replaying an early level does not wind your progress back.
+        """
+        if not self._bool(f'{name}_locked'):
+            self.values[LAST_UNLOCKED_KEY] = name
+        self._set(f'{name}_locked', True)
+
+    def is_level_unlocked(self, name: str) -> bool:
+        return self._bool(f'{name}_locked')
+
+    @property
+    def last_unlocked_level(self) -> str:
+        stored = self.values.get(LAST_UNLOCKED_KEY)
+        if isinstance(stored, str) and stored:
+            return stored
+        return FIRST_LEVEL.get(self.app_name, FIRST_LEVEL[DEFAULT_APP])
+
+    # ---------------------------------------------------------- playlists
+    def save_last_playlist(self, name: str) -> None:
+        self._set(LAST_PLAYLIST_KEY, name)
+
+    def get_last_playlist(self) -> str:
+        """``-[PGEGameProgress getLastPlaylist]`` (0x10002bc48): the saved
+        one, or this game's first level (the menu atmosphere comes from it)."""
+        stored = self.values.get(LAST_PLAYLIST_KEY)
+        if isinstance(stored, str) and stored:
+            return stored
+        return FIRST_LEVEL.get(self.app_name, FIRST_LEVEL[DEFAULT_APP])
+
+    # ------------------------------------------------- skippable narration
+    def save_skippable_sound(self, key: str) -> None:
+        """Heard once, so the player may skip it from now on."""
+        if key:
+            self._set(key, True)
+
+    def can_skip_sound(self, key: str) -> bool:
+        return self._bool(key)
+
+    # ----------------------------------------------------------- dilemmas
+    def save_dilemma_status(self, value: bool, dilemma_id: str) -> None:
+        self._set(str(dilemma_id), bool(value))
+
+    def get_dilemma_status(self, dilemma_id: str) -> bool:
+        return self._bool(str(dilemma_id))
+
+    def __repr__(self) -> str:
+        return f'<GameProgress {len(self.values)} keys at {self.path!r}>'
+
+
+class InMemoryProgress(GameProgress):
+    """The same progress, kept in memory only - for tests and the simulator."""
+
+    def __init__(self, app_name: str = DEFAULT_APP) -> None:
+        self.path = ''
+        self.app_name = app_name
+        self.values = {}
+
+    def load(self) -> 'InMemoryProgress':
+        return self
+
+    def synchronize(self) -> None:
+        pass

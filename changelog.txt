@@ -1,0 +1,6 @@
+Changes in The Nightjar
+
+2026-09-28
+First release: the whole game on Windows, all 14 levels and both endings.
+Play with the keyboard or a controller, and change any key or button in Settings.
+The game checks for updates when you start it and can update itself.

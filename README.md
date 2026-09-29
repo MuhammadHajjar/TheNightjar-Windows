@@ -1,9 +1,9 @@
-# The Nightjar - Windows port
+# The Nightjar - Windows and Mac port
 
-A faithful port of *The Nightjar* (Somethin' Else, iOS, 2011) to Windows: the
-audio-only sci-fi thriller, played entirely by listening. All 14 levels and
-both endings; keyboard and controller; screen-reader output; and the
-original's own HRTF.
+A faithful port of *The Nightjar* (Somethin' Else, iOS, 2011) to Windows and
+macOS: the audio-only sci-fi thriller, played entirely by listening. All 14
+levels and both endings; keyboard and controller; screen-reader output; and
+the original's own HRTF.
 
 The engine is not a re-imagining. The Nightjar runs the Papa Engine, the same
 build as Papa Sangre's (the binary is Papa Sangre 1's, every function 0x10
@@ -33,6 +33,20 @@ files that changed, then the game closes, puts them in place and starts again
 by itself; Not now asks again next time. Your progress is kept. The check at
 start can be switched off in Settings.
 
+### On a Mac
+
+Download `TheNightjar-Mac.zip` from the newest release, unzip it, and open
+`The Nightjar.app` from "The Nightjar" folder (drag it to Applications if you
+like). It is not notarised, so the first time macOS may refuse to open it:
+Control-click it, choose Open, then Open again, or allow it under System
+Settings, Privacy & Security. Speech is VoiceOver's; turn VoiceOver on with
+Cmd+F5 before starting, and when macOS asks whether The Nightjar may control
+VoiceOver, allow it.
+
+Your progress and settings are in `~/Library/Application Support/The Nightjar`.
+The Mac build tells you when there is a newer version, but does not install
+it: download the new Mac zip and replace the app. Your progress is kept.
+
 ## Controls
 
 Keyboard, all rebindable in Settings, Keys:
@@ -58,8 +72,9 @@ Controller, rebindable in Settings, Controller buttons:
 | B, or Back | back |
 | Start | pause menu |
 
-Nothing on the keyboard or the pad quits the game: that is Alt+F4, or Quit in
-a menu.
+Nothing on the keyboard or the pad quits the game: that is Alt+F4 (Cmd+Q on a
+Mac), or Quit in a menu. On a Mac keyboard without Page up and Page down,
+they are Fn+Up and Fn+Down.
 
 ## Building
 
@@ -70,9 +85,16 @@ the HRTF table. Clone it and build, there is nothing else to find.
     python tools/build_exes.py        the game, into Run\ (exe, _internal, changelog)
     python tools/pack_release.py      the release zip, into dist\
 
+Both build for the platform they run on: on a Mac, `Run/The Nightjar.app` and
+`dist/TheNightjar-Mac.zip`. The Mac's OpenAL Soft and makemhr are committed
+in `vendor/openal-mac` and `vendor/makemhr-mac`; `tools/build_openal_mac.sh`
+rebuilds them (cmake and the Xcode command line tools). The bundle is signed
+ad hoc, not notarised.
+
 The game is a folder build (PyInstaller one-dir): every sound, level and
 playlist travels inside the exe as one encrypted pack, embedded as a Windows
-resource, so there are no loose game files. `EIGC_Users.plist`, which the
+resource (on the Mac, `gamedata.pak` inside the .app), so there are no loose
+game files. `EIGC_Users.plist`, which the
 original bundle carries, is never committed, packed or shipped:
 `.gitignore` and `build_exes.py` both refuse it.
 
@@ -80,7 +102,8 @@ The HRTF is not committed in its built form: `build/` is generated. The
 committed `tools/embedded_hrtf.dat` is the original IRCAM 1050 set, carved out
 of the binary by `tools/extract_hrtf.py`, and `build_exes.py` rebuilds
 `build/hrtf/papa_ircam_1050.mhr` from it on a fresh clone with
-`vendor/makemhr/makemhr.exe` (from OpenAL Soft's binary release).
+`vendor/makemhr/makemhr.exe` (from OpenAL Soft's binary release), or
+`vendor/makemhr-mac/makemhr` on a Mac.
 
 The original's arm64 binary is here too, at `reference/Nightjar_arm64`.
 Nothing needs it to build or play, but it is the source of truth for the
@@ -97,9 +120,10 @@ survey tools (`audit_ps1port.py`, `inventory.py`, `level_survey.py`,
 
 ## Running from source
 
-Python 3.12+, `pygame-ce`, `numpy`, `av`, and OpenAL Soft (`vendor/openal`).
-Speech goes through the NVDA controller client when NVDA is running, SAPI 5
-otherwise.
+Python 3.12+, `pygame-ce`, `numpy`, `av`, and OpenAL Soft (`vendor/openal`,
+or `vendor/openal-mac`). Speech goes through the NVDA controller client when
+NVDA is running, SAPI 5 otherwise; on a Mac through VoiceOver
+(`pyobjc-framework-cocoa`).
 
     python apps/play.py                      the game
     python apps/play.py nightJar_8           straight into one level
@@ -107,7 +131,9 @@ otherwise.
     python -m pytest                         the tests (build once first: the audio tests use the built HRTF)
     python tools/verify_updater.py           the updater, end to end, offline
 
-A built exe checks itself without anyone at the keys:
+A built exe checks itself without anyone at the keys (on a Mac, run
+`"The Nightjar.app/Contents/MacOS/The Nightjar"` the same way; it writes
+`selftest.txt` into Application Support):
 
     "The Nightjar.exe" --selftest nightJar_1       20 s of a level on the real device
     "The Nightjar.exe" --autoplay nightJar_12      the autopilot plays the level to its end
@@ -123,8 +149,8 @@ three the same. The release tag is the version without spaces,
 `TheNightjar-Windows.zip`, so
 https://github.com/MuhammadHajjar/TheNightjar-Windows/releases/latest/download/TheNightjar-Windows.zip
 always downloads the newest, and it is what the game looks for when it
-updates itself. Keep it the only zip on a release. `changelog.txt` ships beside
-the exe.
+updates itself. The Mac zip, `TheNightjar-Mac.zip`, goes on the same release;
+no other zip does. `changelog.txt` ships beside the exe and the app.
 
 ## Layout
 

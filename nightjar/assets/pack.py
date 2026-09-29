@@ -5,7 +5,9 @@ folder - the exe beside its libraries, so nothing is unpacked to a temporary
 folder at every start - with the sounds, levels and playlists encrypted inside
 the exe itself rather than lying loose.  ``tools/build_exes.py`` writes the pack and embeds it in the exe
 as a Windows resource (type ``NJPACK``, name ``GAMEDATA``); Windows maps it
-with the exe, so reading a file is a slice of memory and a decryption.
+with the exe, so reading a file is a slice of memory and a decryption.  A
+Mach-O has no resources, so on the Mac the pack is ``gamedata.pak`` inside the
+.app bundle, mapped the same way.
 
 The pack::
 
@@ -29,6 +31,7 @@ import fnmatch
 import hashlib
 import io
 import json
+import mmap
 import os
 import struct
 import sys
@@ -156,7 +159,10 @@ def auto_mount(root: str) -> bool:
         for base in (os.path.dirname(root), os.path.dirname(sys.executable)):
             p = os.path.join(base, FILE_NAME)
             if os.path.isfile(p):
-                buf = open(p, 'rb').read()
+                # mapped, as Windows maps the resource: a file is read when
+                # it is asked for, not the whole pack at every start
+                with open(p, 'rb') as fh:
+                    buf = mmap.mmap(fh.fileno(), 0, access=mmap.ACCESS_READ)
                 break
     if buf is None:
         return False

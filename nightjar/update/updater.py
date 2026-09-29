@@ -24,6 +24,11 @@ copies the files in (retrying for a while, in case an antivirus scanner is
 holding one), checks each one arrived whole, and starts the game again.  If it
 cannot finish, it puts the backup back and starts the old game.  PowerShell
 rather than a .cmd because a folder name may hold non-ASCII characters.
+
+**The Mac only looks.**  A Mac build checks the same releases for its own zip,
+``TheNightjar-Mac.zip``, and says when there is a newer one, but does not put
+it in: changing a signed .app's files from inside it would break its
+signature.  The player downloads the new zip instead.
 """
 
 from __future__ import annotations
@@ -39,7 +44,7 @@ import urllib.request
 import zipfile
 import zlib
 
-from ..util import paths
+from ..util import host, paths
 from . import version
 from .remotezip import RemoteZip, RemoteZipError, USER_AGENT
 
@@ -48,9 +53,12 @@ LATEST_RELEASE = 'https://api.github.com/repos/%s/releases/latest' % REPOSITORY
 RELEASES_PAGE = 'https://github.com/%s/releases' % REPOSITORY
 #: the release zip's name, the same on every release, so one link always
 #: gives the newest: .../releases/latest/download/TheNightjar-Windows.zip
-ASSET_NAME = 'TheNightjar-Windows.zip'
+#: (and -Mac.zip beside it)
+WINDOWS_ASSET = 'TheNightjar-Windows.zip'
+MAC_ASSET = 'TheNightjar-Mac.zip'
+ASSET_NAME = MAC_ASSET if host.MAC else WINDOWS_ASSET
 #: what the first releases called it, with the version after a dash
-ASSET_PREFIX = 'TheNightjar-Windows-'
+ASSET_PREFIX = ASSET_NAME[:-len('.zip')] + '-'
 LATEST_DOWNLOAD = 'https://github.com/%s/releases/latest/download/%s' % (REPOSITORY, ASSET_NAME)
 GAME_EXE = 'The Nightjar.exe'
 TIMEOUT = 20
@@ -82,7 +90,9 @@ class Release:
         zips = [a for a in data.get('assets') or () if str(a.get('name', '')).lower().endswith('.zip')]
         ours = [a for a in zips if str(a.get('name', '')).lower() == ASSET_NAME.lower()] or \
             [a for a in zips if str(a.get('name', '')).lower().startswith(ASSET_PREFIX.lower())]
-        pick = ours[0] if ours else (zips[0] if len(zips) == 1 else None)
+        # a lone zip is taken whatever its name - but never the Windows one on a Mac
+        lone = zips[0] if len(zips) == 1 and not host.MAC else None
+        pick = ours[0] if ours else lone
         if pick is not None:
             self.asset_name = str(pick.get('name'))
             self.asset_url = str(pick.get('browser_download_url') or '')
@@ -158,6 +168,9 @@ def can_update() -> tuple:
     """(allowed, why not, as a sentence ending the player's announcement)."""
     if not paths.FROZEN:
         return False, 'this is the source version, which updates with git'
+    if host.MAC:
+        return False, ('on the Mac, download the Mac zip from the releases page on GitHub '
+                       'and replace the game with it. Your progress is kept')
     if os.name != 'nt':
         return False, 'updating by itself only works on Windows'
     if paths.running_from_throwaway():
@@ -171,6 +184,11 @@ def can_update() -> tuple:
     except OSError:
         return False, 'the game is in a folder it cannot write to. Move it out of Program Files'
     return True, ''
+
+
+def check_only() -> bool:
+    """A build that may look for a newer release though it cannot install one."""
+    return paths.FROZEN and host.MAC
 
 
 # ======================================================================= the check

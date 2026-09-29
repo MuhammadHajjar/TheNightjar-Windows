@@ -13,7 +13,7 @@ Controls (all rebindable in Settings, or in config\\keys.json):
   Page up/down   volume
   Escape         pause
 
-Built as ``The Nightjar.exe``.  Headphones on.
+Built as ``The Nightjar.exe``, and ``The Nightjar.app`` on the Mac.  Headphones on.
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ from nightjar.shell import (PAD_REBINDABLE, REBINDABLE,           # noqa: E402
                             level_menu, main_menu, pad_menu, pause_menu,
                             settings_menu, update_offer_menu, update_ready_menu)
 from nightjar.tutorial import pc_about, pc_lines                  # noqa: E402
-from nightjar.util import console, paths, sysaudio                # noqa: E402
+from nightjar.util import console, host, paths, sysaudio          # noqa: E402
 from nightjar.util.settings import Settings                       # noqa: E402
 from nightjar.update import updater, version as build_version     # noqa: E402
 from nightjar.update.service import UpdateService                 # noqa: E402
@@ -311,6 +311,9 @@ def start_update_check(app) -> bool:
     app.update_started = True
     allowed, _why = updater.can_update()
     if not allowed:
+        # the Mac: look, and say so if there is one (offer_update)
+        if updater.check_only() and app.settings.check_updates:
+            app.updates.check()
         return False
     try:
         updater.clean_up_staging()
@@ -425,7 +428,7 @@ def install_update(app, staging, remove) -> bool:
 def check_now(app) -> bool:
     """Check for updates, from the main menu: answers either way."""
     allowed, why = updater.can_update()
-    if not allowed:
+    if not allowed and not updater.check_only():
         app.say(f'This copy cannot update itself: {why}. It is version {build_version.text()}.')
         return False
     svc = app.updates
@@ -797,7 +800,7 @@ def main(rep) -> int:
         app.engine.close()
         pygame.quit()
         return code
-    rep.show('The Nightjar - Windows port')
+    rep.show('The Nightjar - ' + host.PORT_NAME + ' port')
     rep.show('=' * 46)
     app = App(rep)
     rep.show(f'output device : {console.ascii_safe(app.engine.device_name)}')

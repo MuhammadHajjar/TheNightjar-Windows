@@ -269,3 +269,35 @@ restarted).  A fresh clone passes all 210 tests once the HRTF is built.
 **Released:** https://github.com/MuhammadHajjar/TheNightjar-Windows, public,
 MIT; tag `2026-09-28`, asset `TheNightjar-Windows.zip` (93 MB).  The beta zip
 was removed from the Drive folder; Seth's note stays.
+
+## The Mac build (2026-09-29)
+
+The same game on macOS, the way the Papa Sangre port did it.  The runtime had
+come over with `nightjar/util/host.py` and the VoiceOver bridge already; what
+was Windows-only was the build, the data pack and the release.
+
+- **OpenAL Soft and makemhr** for the Mac are vendored as the Papa Sangre
+  port built them (`tools/build_openal_mac.sh`): 1.25.2, the version of the
+  committed `soft_oal.dll`, in `vendor/openal-mac` and `vendor/makemhr-mac`.
+- **The pack.**  A Mach-O has no resources, so on the Mac `gamedata.pak` goes
+  inside the .app beside the frozen root, where `pack.auto_mount` already
+  looked, and is mapped rather than read whole.
+- **The bundle** is `Run/The Nightjar.app`, one-dir and windowed, with
+  `com.thenightjar.port` and the version as dotted numbers (`2026.9.28`,
+  `2026.9.28.2` for number 2).  Stamping Info.plist after PyInstaller has
+  signed the bundle breaks the signature, so the build signs it again, ad
+  hoc, and verifies it.  (The Papa Sangre port's bundle ships with that
+  broken signature.)
+- **The zip** is `TheNightjar-Mac.zip`, made with `ditto`: zipfile would store
+  the bundle's symbolic links as copies and break the signature again.
+- **Updates.**  The Mac looks for its own zip on the same releases and says
+  when there is a newer one, but does not install it; the Windows updater
+  still picks `TheNightjar-Windows.zip` by name when both are on a release.
+- **Quit to Windows** is Quit to the desktop on the Mac.
+
+**Proved** on an M-series Mac: all tests but one pass (the bit-for-bit decode
+check against Homebrew's ffmpeg 9, which trims 400 frames of AAC padding that
+PyAV's ffmpeg 8.1 keeps - the samples agree); the built app's `--selftest
+nightJar_1` (HRTF enabled, VoiceOver, game time 19.8 s in 20.0 s) and
+`--autoplay nightJar_12` (won, 27.9 s in 28.1 s); and the release zip,
+extracted with `ditto`, verifies its signature and passes its self-test.

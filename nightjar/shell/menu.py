@@ -29,9 +29,9 @@ end                   Play this again (click), Main Menu (back)
 
 Added for a PC, each recorded in DIVERGENCES.md: Settings, Quit and (at M7)
 Check for updates on the main menu; the click when a level is chosen (house
-standard); Settings and Quit to Windows on the pause screen; Select Level and
-Quit after a level; the screens' titles (the pictures' words); the version and
-a PC note on About.
+standard); Settings and Quit to Windows (to the desktop, on the Mac) on the
+pause screen; Select Level and Quit after a level; the screens' titles (the
+pictures' words); the version and a PC note on About.
 
 Nothing is drawn.  A menu is a list you move through with up and down, choose
 with Enter or A, and leave with Escape or B; left and right change a setting.
@@ -40,6 +40,7 @@ with Enter or A, and leave with Escape or B; left and right change a setting.
 from __future__ import annotations
 
 from ..assets.hublist import load_hub_list
+from ..util import host
 from ..util.settings import MAX_TURN_RATE, MIN_TURN_RATE
 from . import texts
 
@@ -297,7 +298,7 @@ def pause_menu() -> Menu:
         MenuItem('Restart Level', 'restart', sound=CLICK),    # playAgainButtonTouched:
         MenuItem('Settings', 'settings', sound=CLICK),
         MenuItem('Quit game', 'main', sound=BACK),            # quitButtonTouched:
-        MenuItem('Quit to Windows', 'quit', sound=BACK),
+        MenuItem('Quit to Windows' if host.WINDOWS else 'Quit to the desktop', 'quit', sound=BACK),
     ], cancel=MenuItem('Continue game', 'resume', sound=CLICK))
 
 

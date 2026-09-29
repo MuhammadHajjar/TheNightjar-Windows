@@ -42,6 +42,7 @@ played to its end by the autopilot, on the simulator and on the built exe.)
 | A level's listeners are dropped when it goes (`MessageBus.scope`, `Game.unload`) | the original deallocates the level, its agents and its player, and their `dealloc` removes their observers; without this each old player kept walking in its old map (M3 report: invisible walls, a doubled shuffle) |
 | Keyboard, controller, turn rate | the original was a touchscreen |
 | Settings (volume, turning speed, PC instructions, check for updates, keys, controller buttons), Quit, Select Level and Quit after a level, Quit to Windows on pause | a PC needs them |
+| The Mac build: Quit to the desktop on pause; speech through VoiceOver; progress in `~/Library/Application Support/The Nightjar`; updates are looked for and announced, not installed | a Mac app is signed, and changing its files from inside breaks the signature; a quarantined app may run from a read-only copy |
 | Escape on the win, lose and end screens is Main Menu (back sound) | house standard: Escape backs out |
 | "That level is locked." when a locked level is chosen | the original's row does nothing, silently |
 | The screens' titles spoken ("You're through but you're not safe yet", "0 human life-forms detected", "The End", "Paused") | the original's words, but in pictures VoiceOver could not read |

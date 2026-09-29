@@ -9,6 +9,9 @@ __pycache__/
 .pytest_cache/
 .DS_Store
 
+# where tools/build_openal_mac.sh fetches and builds OpenAL Soft
+vendor/build-openal/
+
 # The original game.  What the port runs on is committed so a clone builds
 # and plays with nothing else to find: the levels and the level list, the
 # playlists, the sounds, the four menu sounds, and the More games page the

@@ -22,6 +22,7 @@ from nightjar.audio.engine import (                             # noqa: E402
     COINCIDENT_OFFSET, DISTANCE_SCALE, MASTER_GAIN, MAX_SPATIAL_GAIN,
     csl_to_openal, normalize_to_head)
 from nightjar.audio.loader import decode                        # noqa: E402
+from nightjar.util import paths                                 # noqa: E402
 
 BUNDLE = os.path.join(ROOT, 'reference', 'Payload', 'The Nightjar.app')
 # Every Nightjar sound is stereo on disk - even Chase_mono - so the fold to
@@ -31,7 +32,7 @@ MONSTER = ('nightjar_sounds', 'monsters', 'Chase_mono.m4a')                     
 TRANSIENT = ('nightjar_sounds', 'collectables', 'Door_pneumatic_appear.m4a')        # a door opening
 AMBIENCE = ('nightjar_sounds', 'atmos', 'Atmos_cargobay.m4a')                       # flat stereo bed
 VOICE = ('nightjar_sounds', 'prompts', 'prompt_d_lvl1_b.m4a')                       # flat narration
-HRTF_MHR = os.path.join(ROOT, 'build', 'hrtf', 'papa_ircam_1050.mhr')
+HRTF_MHR = os.path.join(paths.hrtf_dir(), 'papa_ircam_1050.mhr')
 
 
 # ------------------------------------------------------- recovered constants

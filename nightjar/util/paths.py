@@ -108,7 +108,9 @@ def openal_dll() -> str:
     if host.MAC:
         for candidate in (resource('libopenal.dylib'),
                           resource('vendor', 'openal-mac',
-                                   'libopenal.dylib')):
+                                   'libopenal.dylib'),
+                          '/opt/homebrew/opt/openal-soft/lib/libopenal.dylib',
+                          '/usr/local/opt/openal-soft/lib/libopenal.dylib'):
             if os.path.exists(candidate):
                 return candidate
         return resource('vendor', 'openal-mac', 'libopenal.dylib')
